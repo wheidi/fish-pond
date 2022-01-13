@@ -9,3 +9,14 @@ canvas {
     display: block;
     margin: 0 auto;
 }
+
+button {
+    padding: 25px;
+}
+
+#buttonContainer{
+    position: absolute;
+    
+    z-index: 1;
+    margin: 50px
+}

@@ -3,21 +3,44 @@ var canvas = document.getElementById("myCanvas");
 
 /*rendering context. Tool used to pain on Canvas*/
 var ctx = canvas.getContext("2d");
+const fps = 35;
+
 
 /*fish vars*/
 var numFish = 3;
 var fishColour = "#8F8FFF";
 var fishes = [];
 var detectionRadius = 200;
+var spacing = 8;
+var chubbiness = 2;
+
+var ballRadius = 15;
+var fishLength = 8;
 
 /*mouse position variables*/
 var mx = 0;
 var my = 0;
 
-/*vars for collision detection*/
-var ballRadius = 10;
 
 /** functions + classes**/
+
+/** PLAY/PAUSE POND **/
+var play = true;
+
+function pausePlayAnim() {
+    play = !play;
+
+    if (play) {
+
+        console.log("playing")
+        requestAnimationFrame(draw);
+        document.querySelector('#playPause').innerText= 'Pause';
+    } else {
+        document.querySelector('#playPause').innerText= 'Play';
+    }
+}
+
+/** POND **/
 function setSize() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
@@ -39,69 +62,92 @@ function clearMouseCoords() {
     my = 0;
 }
 
+class fishPiece {
+    constructor (x, y, dx, dy, rad, colour) {
+        this.colour = colour;
+        this.x = x + dx + spacing;
+        this.y = y + dy + spacing;
+        this.prevx = x;
+        this.prevy = y;
+        this.ballRadius = rad;
+    }
+}
+
 class Fish {
     constructor(x, y, colour, rad) {
         this.colour = colour;
-        this.x = x;
-        this.y = y;
+        this.headx = x;
+        this.heady = y;
         this.ballRadius = rad;
-
         this.dx = -1;
         this.dy = 1;
-        this.offsetm = 1;
+        this.fishPieces = [];
+
+        this.assembleFish(this.ballRadius);
     }
 
-    drawFish(rad, offsetx, offsety) {
+    assembleFish(rad) {
+        for (let i = 0; i < fishLength; i++) {
+            if (rad > 0) {
+                var newPiece = 
+                new fishPiece (this.headx + this.dx + (spacing * (i + 1)), 
+                this.heady + this.dy + (spacing * (i + 1)), this.dx, this.dy, rad, fishColour);
 
-        if (rad <= 5) {
-            this.offsetm = 1;
-            rad = ballRadius;
-            return;
+                this.fishPieces.push(newPiece);
+                rad -= chubbiness;
+            }
         }
-        else {
-            ctx.beginPath();
+    }
 
-            console.log("x, y: " + offsetx + "," + offsety);
+    drawFish() {
+        ctx.globalAlpha = 0.5;
 
-            ctx.arc(offsetx, offsety, rad, 0, Math.PI*2);
-            ctx.fillStyle = this.colour;
-            ctx.fill();
-            ctx.closePath();
+        for (let i = 1; i < this.fishPieces.length; i++ ) {
+                        
 
-            rad -=1;
-            this.offsetm += 1;
+                this.fishPieces[i].prevx = this.fishPieces[i].x;
+                this.fishPieces[i].prevy = this.fishPieces[i].y;
 
-            this.drawFish(rad, offsetx - (this.dx * this.offsetm), 
-            offsety - (this.dy * this.offsetm));
+                this.fishPieces[i].x = this.fishPieces[i - 1].prevx;
+                this.fishPieces[i].y = this.fishPieces[i - 1].prevy;
+            
+            // console.log("curr fish coords: " + i + ": " + this.fishPieces[i].x + ", " + this.fishPieces[i].y);
+            // console.log("prev fish coords: " + i + ": " + this.fishPieces[i-1].x + ", " + this.fishPieces[i-1].y);
+
+                ctx.beginPath();
+                ctx.arc(this.fishPieces[i].x, this.fishPieces[i].y, this.fishPieces[i].ballRadius, 0, Math.PI*2);
+                ctx.fillStyle = this.colour;
+                ctx.fill();
+                ctx.closePath();
+
         }
     }
 
     fishAct() {
-        ctx.globalAlpha = 0.5;
-        this.drawFish(this.ballRadius, this.x, this.y);
+        this.drawFish();
         this.moveFish();
         this.findMouse();
         this.checkObstacle();
     }
 
     moveFish() {
-        /*randomize turns*/
-        if ((Math.random() < 0.005) || 
-        (this.x + this.dx > canvas.width-ballRadius || this.x + this.dx < ballRadius)) {
-            this.dx *= -1;
-        }
+        /*complete changes in direction*/
+        // if ((Math.random() < 0.0005) || 
+        // (this.x + this.dx > canvas.width-ballRadius || this.x + this.dx < ballRadius)) {
+        //     this.dx *= -1;
+        // }
 
-        if ((Math.random() < 0.005) || 
-        (this.y + this.dy > canvas.height-ballRadius || this.y + this.dy < ballRadius)) {
-            this.dy *= -1;
-        }
+        // if ((Math.random() < 0.005) || 
+        // (this.y + this.dy > canvas.height-ballRadius || this.y + this.dy < ballRadius)) {
+        //     this.dy *= -1;
+        // }
 
         // if (Math.random() < 0.005) {
         //     stopStartFish();
         // }
 
         /*less than 90 deg turns*/
-        if (Math.random() < 0.005) {
+        if (Math.random() < 0.05) {
             var nx = Math.random();
             var ny = Math.random();
 
@@ -120,8 +166,12 @@ class Fish {
             }
         }
 
-        this.x += this.dx;
-        this.y += this.dy;
+        //console.log("head coords: " + this.fishPieces[0])
+        this.fishPieces[0].prevx = this.fishPieces[0].x;
+        this.fishPieces[0].prevy = this.fishPieces[0].y;
+
+        this.fishPieces[0].x += this.dx * spacing;
+        this.fishPieces[0].y += this.dy * spacing;
     }
 
     // stopStartFish() {
@@ -135,11 +185,11 @@ class Fish {
     // }
 
     checkObstacle() {
-        if ((this.x + this.dx < 0) || (this.x + this.dx > canvas.width)){
+        if ((this.fishPieces[0].x + this.dx < 0) || (this.fishPieces[0].x + this.dx > canvas.width)){
             this.dx *= -1;
         }
 
-        if ((this.y + this.dy < 0) || (this.y + this.dy > canvas.height)) {
+        if ((this.fishPieces[0].y + this.dy < 0) || (this.fishPieces[0].y + this.dy > canvas.height)) {
             this.dy *= -1;
 
         }
@@ -147,8 +197,11 @@ class Fish {
 
     findMouse() {
         if(mx != 0 && my != 0) {
-            var distx = mx - this.x;
-            var disty = my - this.y;
+
+            //console.log("mouse coords: " + mx +", "+my);
+
+            var distx = mx - this.fishPieces[0].x;
+            var disty = my - this.fishPieces[0].y;
 
             var h = Math.sqrt(distx * distx + disty * disty);
 
@@ -174,6 +227,10 @@ function addFish() {
 }
 
 function draw() {
+    if (!play) {
+        console.log("paused");
+        return;
+    }
 
     setSize();
 
@@ -183,7 +240,10 @@ function draw() {
 
         fishes[i].fishAct();
     }  
-    requestAnimationFrame(draw);
+
+    setTimeout(() => {
+        requestAnimationFrame(draw);
+      }, 1000 / fps);
 };
 
 addFish();
