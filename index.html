@@ -7,15 +7,18 @@
     <link rel="stylesheet" type="text/css" href="css/main.css">
 </head>
 
-<div class="buttonContainer">
-    <button id="playPause" type="button" onclick="pausePlayAnim()">Pause</button>
+
+
+<div id="container">
+
+    <div class="buttonContainer">
+        <button id="playPause" type="button" onclick="pausePlayAnim()">Pause</button>
+    </div>
+
+    <canvas id="myCanvas"
+    onmousemove="setMouseCoords(event)" onmouseout="clearMouseCoords()">
+    </canvas>
 </div>
-
-<canvas id="myCanvas"
-onmousemove="setMouseCoords(event)" onmouseout="clearMouseCoords()">
-
-</canvas>
-
 
 <script src="./js/pond.js"></script>
 

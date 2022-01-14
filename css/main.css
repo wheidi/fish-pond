@@ -3,20 +3,24 @@
     margin: 0;
 }
 
+#container {
+    position: relative;
+    overflow: hidden;
+    z-index: 1;
+}
 canvas {
-
-    background: #eee;
+    z-index: 0;
+    background: white;
     display: block;
     margin: 0 auto;
 }
 
 button {
+
     padding: 25px;
 }
 
 #buttonContainer{
-    position: absolute;
-    
-    z-index: 1;
+    z-index: 5;
     margin: 50px
 }
